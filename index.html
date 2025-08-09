@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Study Ethics Assistant (MVP)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #app-controls, #footer, .no-print { display: none !important; }
+      #receipt { display: block !important; }
+      .page { page-break-after: always; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold">AI Study Ethics Assistant</h1>
+      <div class="text-sm text-gray-500">MVP • local-only • no login</div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <!-- Intro / Banner -->
+    <section class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">
+      <h2 class="text-lg font-semibold">Should I use AI for this assignment?</h2>
+      <p class="text-sm mt-1 text-gray-700">Answer a few questions. Get a clear <span class="font-semibold">Green / Yellow / Red</span> recommendation with rationale, a disclosure blurb, and a printable Decision Receipt.</p>
+    </section>
+
+    <!-- Form -->
+    <section id="app-controls" class="grid md:grid-cols-3 gap-5">
+      <!-- Left: Context -->
+      <div class="md:col-span-2 bg-white rounded-2xl shadow p-5 space-y-5">
+        <h3 class="text-base font-semibold">1) Context</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <label class="block text-sm">Course / Instructor
+            <input id="course" type="text" class="mt-1 w-full rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., FCWR 302 – Prof. Smith" />
+          </label>
+          <label class="block text-sm">Assignment Type
+            <select id="assignmentType" class="mt-1 w-full rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+              <option>Essay / Report</option>
+              <option>Problem Set</option>
+              <option>Programming Lab</option>
+              <option>Design Project / Studio</option>
+              <option>Presentation</option>
+              <option>Lab Report (Science)</option>
+              <option>Take-Home Exam / Quiz</option>
+            </select>
+          </label>
+          <label class="block text-sm">AI Tool (optional)
+            <input id="aiTool" type="text" class="mt-1 w-full rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., ChatGPT, Grammarly, Copilot" />
+          </label>
+          <label class="block text-sm">Due Date (optional)
+            <input id="dueDate" type="date" class="mt-1 w-full rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500" />
+          </label>
+        </div>
+
+        <div class="pt-2">
+          <div class="text-sm font-medium mb-2">Planned AI Uses (choose all that apply)</div>
+          <div id="intendedUses" class="grid md:grid-cols-2 gap-2 text-sm">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <div class="text-sm font-medium mb-2">Quick ethics checks</div>
+          <div class="space-y-2 text-sm">
+            <label class="flex items-start gap-2"><input id="policyKnown" type="checkbox" class="mt-1"> My syllabus / assignment has an AI policy I can reference.</label>
+            <label class="flex items-start gap-2"><input id="dataSensitive" type="checkbox" class="mt-1"> This work involves sensitive, proprietary, or personal data (FERPA/PHI/PII).</label>
+            <label class="flex items-start gap-2"><input id="collabRestricted" type="checkbox" class="mt-1"> Instructor said no collaboration or outside assistance for this task.</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Rubric Card -->
+      <div class="bg-white rounded-2xl shadow p-5 space-y-4">
+        <h3 class="text-base font-semibold">2) Evaluate</h3>
+        <p class="text-sm text-gray-600">Click evaluate to get a recommendation with rationale and steps.</p>
+        <button id="evaluateBtn" class="w-full rounded-xl bg-indigo-600 text-white py-2.5 font-medium hover:bg-indigo-700">Evaluate</button>
+
+        <div id="resultCard" class="hidden border rounded-xl p-4 space-y-2">
+          <div class="text-sm text-gray-500">Recommendation</div>
+          <div id="resultBadge" class="inline-flex items-center gap-2 text-white px-2.5 py-1 rounded-full"></div>
+          <div id="resultText" class="text-sm"></div>
+        </div>
+
+        <div class="text-xs text-gray-500">Rule order: <span class="font-medium">Policy → Learning Outcomes → Transparency → Privacy → Fairness → Originality</span></div>
+      </div>
+    </section>
+
+    <!-- Recommendations & Disclosure -->
+    <section id="recommendations" class="hidden grid md:grid-cols-3 gap-5">
+      <div class="md:col-span-2 bg-white rounded-2xl shadow p-5 space-y-4">
+        <h3 class="text-base font-semibold">Why this result</h3>
+        <ul id="rationales" class="list-disc pl-5 text-sm space-y-1"></ul>
+        <h4 class="text-sm font-semibold mt-4">Next steps / safer workflow</h4>
+        <ul id="actions" class="list-disc pl-5 text-sm space-y-1"></ul>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-5 space-y-3">
+        <h3 class="text-base font-semibold">Disclosure blurb</h3>
+        <textarea id="disclosure" class="w-full h-40 rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 text-sm p-3"></textarea>
+        <button id="copyDisclosure" class="w-full rounded-xl border border-gray-300 py-2 text-sm hover:bg-gray-50">Copy</button>
+      </div>
+    </section>
+
+    <!-- Receipt -->
+    <section id="receipt" class="hidden bg-white rounded-2xl shadow p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold">Decision Receipt</h3>
+        <button onclick="window.print()" class="no-print rounded-xl bg-gray-900 text-white px-4 py-2 text-sm">Print / Save PDF</button>
+      </div>
+      <div id="receiptBody" class="text-sm space-y-2"></div>
+    </section>
+
+    <!-- History -->
+    <section class="bg-white rounded-2xl shadow p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-semibold">Your last 10 decisions (local to this browser)</h3>
+        <button id="clearHistory" class="text-sm text-red-600">Clear</button>
+      </div>
+      <div id="history" class="text-sm text-gray-700 space-y-2"></div>
+    </section>
+  </main>
+
+  <footer id="footer" class="max-w-5xl mx-auto px-4 py-8 text-xs text-gray-500">
+    Guidance only. Always defer to your instructor, program, and institutional policies.
+  </footer>
+
+  <script>
+    // --- Taxonomy of uses ---
+    const USES = [
+      { id: 'brainstorm', label: 'Brainstorming ideas' },
+      { id: 'outline', label: 'Outlining / structure' },
+      { id: 'summarize', label: 'Summarizing sources I provide' },
+      { id: 'researchHelp', label: 'Research guidance (finding sources, keywords)' },
+      { id: 'citation', label: 'Citation formatting / reference checks' },
+      { id: 'stylePolish', label: 'Grammar / clarity / style polish' },
+      { id: 'translate', label: 'Translation to/from English' },
+      { id: 'codeReview', label: 'Code review / debugging' },
+      { id: 'genText', label: 'Generate final text to submit' },
+      { id: 'genCode', label: 'Generate final code to submit' },
+      { id: 'imageGen', label: 'Generate images/figures' },
+      { id: 'analyzeData', label: 'Analyze data I provide' },
+    ];
+
+    const usesEl = document.getElementById('intendedUses');
+    USES.forEach(u => {
+      const id = `use_${u.id}`;
+      const w = document.createElement('label');
+      w.className = 'inline-flex items-start gap-2 bg-gray-50 border rounded-xl px-3 py-2';
+      w.innerHTML = `<input type="checkbox" id="${id}" class="mt-1"/> <span>${u.label}</span>`;
+      usesEl.appendChild(w);
+    });
+
+    // Helpers
+    const $ = sel => document.querySelector(sel);
+    const checked = id => $(`#use_${id}`).checked;
+    const todayIso = () => new Date().toISOString();
+
+    // --- Evaluation rules (transparent, simple) ---
+    function evaluateDecision() {
+      const course = $('#course').value.trim();
+      const assignmentType = $('#assignmentType').value;
+      const aiTool = $('#aiTool').value.trim();
+      const dueDate = $('#dueDate').value;
+      const policyKnown = $('#policyKnown').checked;
+      const dataSensitive = $('#dataSensitive').checked;
+      const collabRestricted = $('#collabRestricted').checked;
+
+      const uses = USES.filter(u => checked(u.id)).map(u => u.id);
+
+      const rationales = [];
+      const actions = [];
+
+      // Priority: Policy
+      if (assignmentType.includes('Exam')) {
+        rationales.push('Assignment type is an exam/quiz where AI use is typically prohibited.');
+        return makeResult('red', 'Likely prohibited. Do not use AI unless instructor explicitly allows it for this exam.', {course, assignmentType, aiTool, dueDate, uses, policyKnown, dataSensitive, collabRestricted, rationales, actions});
+      }
+      if (collabRestricted) {
+        rationales.push('Instructor restricted collaboration/outside assistance for this task.');
+        return makeResult('red', 'Prohibited: restriction on outside assistance applies to AI tools.', {course, assignmentType, aiTool, dueDate, uses, policyKnown, dataSensitive, collabRestricted, rationales, actions});
+      }
+
+      // Learning outcomes / Originality
+      if (uses.includes('genText') && assignmentType.includes('Essay')) {
+        rationales.push('Generating final text can replace core writing/argumentation skills.');
+      }
+      if (uses.includes('genCode') && assignmentType.includes('Programming')) {
+        rationales.push('Generating final code can replace required problem-solving and coding skills.');
+      }
+
+      // Privacy
+      if (dataSensitive) {
+        rationales.push('Sensitive or personal data must not be shared with external tools without permission.');
+        actions.push('Remove or anonymize all personal/sensitive data before using any AI tool.');
+      }
+
+      // Categorize uses into safer vs risky
+      const safer = ['brainstorm','outline','summarize','researchHelp','citation','stylePolish','translate','codeReview'];
+      const risky = ['genText','genCode','imageGen','analyzeData'];
+
+      const hasSafer = uses.some(u => safer.includes(u));
+      const hasRisky = uses.some(u => risky.includes(u));
+
+      let color = 'green';
+      let summary = 'Allowed with good practices (disclose and cite as needed).';
+
+      // Default heuristics by assignment type
+      if (assignmentType.includes('Essay') || assignmentType.includes('Report')) {
+        if (hasRisky) { color = 'yellow'; summary = 'Use with caution: avoid submitting AI-generated text; keep AI to planning/support.'; actions.push('Do not submit AI-generated text as your own. Use AI only for planning, feedback, and citation support.'); }
+      }
+      if (assignmentType.includes('Problem Set') || assignmentType.includes('Lab')) {
+        if (uses.includes('genText') || uses.includes('genCode') || uses.includes('analyzeData')) { color = 'yellow'; summary = 'Use with caution: focus on understanding; document your process and verify work.'; actions.push('Use AI for hints or debugging, not for final solutions. Show your reasoning.'); }
+      }
+      if (assignmentType.includes('Programming')) {
+        if (uses.includes('genCode')) { color = 'yellow'; actions.push('If you view generated code, annotate what each part does and rewrite in your own style.'); }
+      }
+      if (assignmentType.includes('Design')) {
+        if (uses.includes('imageGen')) { color = 'yellow'; actions.push('Credit AI-generated images; verify licensing; include your own design process.'); }
+      }
+
+      // Escalate to red if risky uses dominate and policy unknown
+      if (hasRisky && !policyKnown) {
+        rationales.push('Policy unknown while planning high-risk AI uses.');
+        actions.push('Check syllabus/ask instructor which uses are allowed for this assignment.');
+      }
+
+      if (hasRisky && (assignmentType.includes('Report') || assignmentType.includes('Essay')) && !policyKnown) {
+        color = color === 'green' ? 'yellow' : color;
+      }
+
+      const disclosure = buildDisclosure({course, assignmentType, aiTool, uses});
+
+      // Fairness & bias
+      if (uses.includes('summarize') || uses.includes('researchHelp') || uses.includes('analyzeData')) {
+        actions.push('Cross-check AI outputs with credible sources; watch for missing perspectives or bias.');
+      }
+      if (uses.includes('stylePolish') || uses.includes('translate')) {
+        actions.push('Keep your voice. Edit outputs so they reflect your own style and learning.');
+      }
+
+      rationales.push('Recommendation follows this order: Policy → Learning Outcomes → Transparency → Privacy → Fairness → Originality.');
+
+      return makeResult(color, summary, {course, assignmentType, aiTool, dueDate, uses, policyKnown, dataSensitive, collabRestricted, rationales, actions, disclosure});
+    }
+
+    function makeResult(color, summary, payload) {
+      const badge = $('#resultBadge');
+      const card = $('#resultCard');
+      const text = $('#resultText');
+      card.classList.remove('hidden');
+      badge.className = 'inline-flex items-center gap-2 text-white px-2.5 py-1 rounded-full';
+      let label = '';
+      if (color === 'green') { badge.classList.add('bg-green-600'); label = 'GREEN · Likely Allowed'; }
+      if (color === 'yellow') { badge.classList.add('bg-amber-500'); label = 'YELLOW · Allowed with Conditions'; }
+      if (color === 'red') { badge.classList.add('bg-red-600'); label = 'RED · Likely Prohibited'; }
+      badge.textContent = label;
+      text.textContent = summary;
+
+      // Fill rationales/actions
+      $('#recommendations').classList.remove('hidden');
+      const r = $('#rationales'); r.innerHTML = '';
+      (payload.rationales || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; r.appendChild(li); });
+      const a = $('#actions'); a.innerHTML = '';
+      if ((payload.actions || []).length === 0) a.innerHTML = '<li>Follow your course AI policy and cite/disclose assistance as required.</li>';
+      else (payload.actions || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; a.appendChild(li); });
+
+      // Disclosure
+      $('#disclosure').value = payload.disclosure || '';
+
+      // Build receipt
+      const rec = $('#receiptBody');
+      rec.innerHTML = `
+        <div class='page'>
+          <div class='flex items-center justify-between mb-2'>
+            <div class='text-lg font-semibold'>AI Study Ethics – Decision Receipt</div>
+            <div class='text-sm'>${new Date().toLocaleString()}</div>
+          </div>
+          <div class='grid md:grid-cols-2 gap-3 text-sm'>
+            <div><span class='font-medium'>Course:</span> ${escapeHtml(payload.course || '—')}</div>
+            <div><span class='font-medium'>Assignment:</span> ${escapeHtml(payload.assignmentType)}</div>
+            <div><span class='font-medium'>AI Tool:</span> ${escapeHtml(payload.aiTool || '—')}</div>
+            <div><span class='font-medium'>Due Date:</span> ${escapeHtml(payload.dueDate || '—')}</div>
+            <div class='md:col-span-2'><span class='font-medium'>Planned Uses:</span> ${formatUses(payload.uses)}</div>
+          </div>
+          <div class='mt-3'>
+            <div class='font-medium'>Recommendation:</div>
+            <div>${$('#resultBadge').textContent} – ${escapeHtml($('#resultText').textContent)}</div>
+          </div>
+          <div class='mt-3'>
+            <div class='font-medium'>Rationales</div>
+            <ul class='list-disc pl-5'>${(payload.rationales||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
+          </div>
+          <div class='mt-3'>
+            <div class='font-medium'>Next Steps</div>
+            <ul class='list-disc pl-5'>${(payload.actions||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
+          </div>
+          <div class='mt-3'>
+            <div class='font-medium'>Disclosure to Instructor</div>
+            <div class='whitespace-pre-wrap border rounded-lg p-3 bg-gray-50'>${escapeHtml($('#disclosure').value)}</div>
+          </div>
+        </div>
+      `;
+      $('#receipt').classList.remove('hidden');
+
+      // Save to history
+      const record = {
+        ts: todayIso(),
+        course: payload.course,
+        assignmentType: payload.assignmentType,
+        aiTool: payload.aiTool,
+        uses: payload.uses,
+        color,
+        summary
+      };
+      const history = JSON.parse(localStorage.getItem('aiEthicsHistory')||'[]');
+      history.unshift(record);
+      localStorage.setItem('aiEthicsHistory', JSON.stringify(history.slice(0,10)));
+      renderHistory();
+
+      return { color, summary };
+    }
+
+    function buildDisclosure({course, assignmentType, aiTool, uses}) {
+      const tool = aiTool || 'an AI assistant';
+      const useLabels = USES.filter(u => uses.includes(u.id)).map(u => u.label.toLowerCase());
+      const allowed = useLabels.length ? useLabels.join(', ') : 'limited planning support';
+      return `For ${assignmentType}${course?` in ${course}`:''}, I used ${tool} for ${allowed}. I verified accuracy, maintained my own writing/thinking, and complied with course policy. All substantive analysis and final decisions are my own.`;
+    }
+
+    function formatUses(uses) {
+      if (!uses || uses.length === 0) return '—';
+      return USES.filter(u => uses.includes(u.id)).map(u=>u.label).join(', ');
+    }
+
+    function renderHistory() {
+      const box = $('#history');
+      const history = JSON.parse(localStorage.getItem('aiEthicsHistory')||'[]');
+      if (history.length === 0) { box.innerHTML = '<div class="text-gray-500">No decisions yet.</div>'; return; }
+      box.innerHTML = history.map(h=>`
+        <div class='flex items-center justify-between border rounded-xl px-3 py-2'>
+          <div>
+            <div class='font-medium'>${escapeHtml(h.assignmentType)} ${h.course?`– ${escapeHtml(h.course)}`:''}</div>
+            <div class='text-xs text-gray-500'>${new Date(h.ts).toLocaleString()} • ${formatUses(h.uses)}</div>
+          </div>
+          <div class='text-xs px-2 py-1 rounded-full ${h.color==='green'?'bg-green-600':h.color==='yellow'?'bg-amber-500':'bg-red-600'} text-white'>${h.color.toUpperCase()}</div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>'"]/g, (c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
+    }
+
+    // Events
+    document.getElementById('evaluateBtn').addEventListener('click', evaluateDecision);
+    document.getElementById('copyDisclosure').addEventListener('click', ()=>{
+      const t = document.getElementById('disclosure');
+      t.select(); document.execCommand('copy');
+      const btn = document.getElementById('copyDisclosure');
+      btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent='Copy', 1200);
+    });
+    document.getElementById('clearHistory').addEventListener('click', ()=>{
+      localStorage.removeItem('aiEthicsHistory'); renderHistory();
+    });
+
+    // Init
+    renderHistory();
+  </script>
+</body>
+</html>
