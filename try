@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Study Ethics Assistant (MVP)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #app-controls, #footer, .no-print { display: none !important; }
+      #receipt { display: block !important; }
+      .page { page-break-after: always; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold">AI Study Ethics Assistant</h1>
+      <div class="text-sm text-gray-500">MVP • local-only • no login</div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <!-- Intro / Banner -->
+    <section class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">
+      <h2 class="text-lg font-semibold">Should I use AI for this assignment?</h2>
+      <p class="text-sm mt-1 text-gray-700">Answer a few questions. Get a clear <span class="font-semibold">Green / Yellow / Red</span> recommendation with rationale, a disclosure blurb, and a printable Decision Receipt.</p>
+    </section>
+
+    <!-- Form -->
+    <section id="app-controls" class="grid md:grid-cols-3 gap-5">
+      <!-- Left: Context -->
+      <div class="md:col-span-2 bg-white rounded-2xl shadow p-5 space-y-5">
+        <h3 class="text-base font-semibold">1) Context</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <label class="block text-sm">Course / Instructor
+            <input id="course" type="text" class="mt-1 w-full rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., FCWR 302 – Prof. Smith" />
+          </label>
+          <label class="block text-sm">Assignment Type
+            <select id="assignmentType" class="mt-1 w-full rounded-xl border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+              <option>Essay / Re
